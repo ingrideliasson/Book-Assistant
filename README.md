@@ -1,15 +1,34 @@
-# AI Product Review Assistant - RAG Application
+# AI Book Assistant - RAG Application
 
-A Retrieval-Augmented Generation (RAG) application that answers questions about books based on customer reviews.
+A Retrieval-Augmented Generation (RAG) application that answers questions about books based on real customer reviews from Amazon. It uses a RAG pipeline combining OpenAI embeddings, FAISS vector search, and GPT-4o for natural-language generation.
 
 ## Features
 
-- **RAG System**: Uses OpenAI embeddings and Google Gemini for intelligent question answering
+- **RAG System**: Uses OpenAI API for embeddings and for intelligent question answering
 - **Vector Search**: FAISS for efficient similarity search across reviews
 - **Streamlit UI**: User-friendly web interface for querying the system
-- **Book Recommendations**: Get recommendations and insights based on customer reviews
 
-## Setup
+Users can ask questions like:
+
+“What do readers like about Stephen King's books?”
+“Which books have the most positive reviews?”
+“What do people say about science-fiction novels?”
+
+The app retrieves the most relevant reviews from thousands of entries and generates a contextual, review-grounded answer. The user can see which reviews were retrieved as context for the answer.
+
+## Demo
+
+https://github.com/user-attachments/assets/f6e89cc2-8ba7-46be-b4f2-273206773e78
+
+## Data
+I used a subset of an Amazon book review dataset which originally contained 3,000,000 reviews. I narrowed them down to 9,000 by extracting the 3,000 most popular books (with the most reviews), and use 3 reviews for each books. This makes the dataset broad with many unique books, while still offering depth with several reviews per book. See the data_exploration.ipynb notebook for the data cleaning process, and some data insights. 
+
+## Local use
+
+### 1. Clone the repo
+```bash
+git clone https://github.com/ingrideliasson/Book-Assistant.git
+```
 
 ### 1. Install Dependencies
 
@@ -29,12 +48,10 @@ Edit `.env` and add your API keys:
 
 ```
 OPENAI_API_KEY=your_openai_api_key_here
-GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 **Getting API Keys:**
 - **OpenAI**: Sign up at https://platform.openai.com/ and get your API key
-- **Gemini**: Sign up at https://makersuite.google.com/app/apikey (free tier available)
 
 ### 3. Build the Embeddings Index
 
@@ -50,8 +67,6 @@ This will:
 - Build a FAISS index for fast similarity search
 - Save the index to `data/faiss_index.bin`
 
-**Note**: This process may take a few minutes depending on the number of reviews.
-
 ### 4. Run the Application
 
 ```bash
@@ -59,73 +74,3 @@ streamlit run app/app.py
 ```
 
 The application will open in your browser at `http://localhost:8501`
-
-## Usage
-
-### Example Queries
-
-- "What do people like about Margaret Atwood books?"
-- "What books do you recommend in the fantasy genre?"
-- "What are the best rated books?"
-- "What do reviewers say about science fiction books?"
-
-### How It Works
-
-1. **Query Processing**: Your question is converted to an embedding using OpenAI
-2. **Retrieval**: The system finds the most relevant reviews using FAISS vector search
-3. **Generation**: Gemini generates an answer based on the retrieved reviews
-4. **Display**: The answer and relevant reviews are shown in the UI
-
-## Project Structure
-
-```
-ai-product-review-assistant/
-├── app/
-│   ├── app.py              # Streamlit UI application
-│   └── rag_system.py        # RAG system implementation
-├── data/
-│   ├── reviews_5000.csv     # Review data
-│   ├── faiss_index.bin      # FAISS index (created after building)
-│   └── embeddings.npy       # Embeddings (created after building)
-├── notebooks/
-│   └── 01_data_exploration.ipynb
-├── scripts/
-│   └── build_index.py       # Script to build embeddings index
-├── .env                     # API keys (create from .env.example)
-├── requirements.txt
-└── README.md
-```
-
-## Technologies Used
-
-- **OpenAI**: Text embeddings (`text-embedding-3-small`)
-- **Google Gemini**: LLM for response generation
-- **FAISS**: Vector similarity search
-- **Streamlit**: Web UI framework
-- **Pandas**: Data processing
-- **NumPy**: Numerical operations
-
-## Notes
-
-- The application uses the first 5000 reviews from the dataset
-- Embeddings are created using OpenAI's API (costs apply)
-- Gemini API has a free tier with generous limits
-- The index is built once and reused for all queries
-
-## Troubleshooting
-
-### Index Not Found
-If you see "No embeddings index found", run:
-```bash
-python scripts/build_index.py
-```
-
-### API Key Errors
-Make sure your `.env` file contains valid API keys and is in the project root.
-
-### Import Errors
-Ensure all dependencies are installed:
-```bash
-pip install -r requirements.txt
-```
-
