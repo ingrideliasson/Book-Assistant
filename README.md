@@ -10,9 +10,9 @@ A Retrieval-Augmented Generation (RAG) application that answers questions about 
 
 Users can ask questions like:
 
-“What do readers like about Stephen King's books?”
-“Which books have the most positive reviews?”
-“What do people say about science-fiction novels?”
+* “What do readers like about Stephen King's books?”
+* “Which books have the most positive reviews?”
+* “What do people say about science-fiction novels?”
 
 The app retrieves the most relevant reviews from thousands of entries and generates a contextual, review-grounded answer. The user can see which reviews were retrieved as context for the answer.
 
@@ -21,7 +21,7 @@ The app retrieves the most relevant reviews from thousands of entries and genera
 https://github.com/user-attachments/assets/f6e89cc2-8ba7-46be-b4f2-273206773e78
 
 ## Data
-I used a subset of an Amazon book review dataset which originally contained 3,000,000 reviews. I narrowed them down to 9,000 by extracting the 3,000 most popular books (with the most reviews), and use 3 reviews for each books. This makes the dataset broad with many unique books, while still offering depth with several reviews per book. See the data_exploration.ipynb notebook for the data cleaning process, and some data insights. 
+I used a subset of an [Amazon book review dataset](https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews) which originally contained 3,000,000 reviews. I narrowed them down to 9,000 by extracting the 3,000 most popular books (with the most reviews), and use 3 reviews for each books. This makes the dataset broad with many unique books, while still offering depth with several reviews per book. See the data_exploration.ipynb notebook for the data cleaning process, and some data insights. 
 
 ## Local use
 
