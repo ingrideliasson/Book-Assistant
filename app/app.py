@@ -20,16 +20,10 @@ load_dotenv()
 def initialize_rag_system():
     """Initialize RAG system with API keys"""
     openai_key = os.getenv("OPENAI_API_KEY")
-    gemini_key = os.getenv("GEMINI_API_KEY")
     
     if not openai_key:
         st.error("OPENAI_API_KEY not found in environment variables. Please set it in .env file or environment.")
         st.info("Create a `.env` file in the project root with: `OPENAI_API_KEY=your_key_here`")
-        return None
-    
-    if not gemini_key:
-        st.error("GEMINI_API_KEY not found in environment variables. Please set it in .env file or environment.")
-        st.info("Create a `.env` file in the project root with: `GEMINI_API_KEY=your_key_here`")
         return None
     
     data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "reviews_9000_popular.csv")
@@ -42,7 +36,6 @@ def initialize_rag_system():
     try:
         return RAGSystem(
             openai_api_key=openai_key,
-            gemini_api_key=gemini_key,
             data_path=data_path
         )
     except Exception as e:
@@ -126,21 +119,22 @@ def main():
             text-align: center;
         }
         
-        /* Style example query buttons in sidebar */
+        /* Style query buttons in sidebar */
         [data-testid="stSidebar"] .stButton > button {
-            background-color: #e1e3e3; /* Change this to your desired color */
+            background-color: #e1e3e3;
             color: white;
+            padding-x: 1rem;
         }
         
         [data-testid="stSidebar"] .stButton > button:hover {
-            background-color: #c9c9c9; /* Change this for hover color */
+            background-color: #c9c9c9;
         }
         
         
         /* Headers */
         h2, h3, h4 {
             color: #34495e;
-            font-weight: 500;
+            font-weight: 100;
         }
         
         /* Text color */
@@ -166,8 +160,7 @@ def main():
         .stButton > button:hover {
             background-color: #4a5568;
         }
-        
-        /* Primary button - slightly more vibrant but still muted, less wide, less horizontal padding */
+
         .stButton > button[kind="primary"] {
             background-color: #e1e3e3;
             color: #2c3e50;
@@ -309,31 +302,37 @@ def main():
             # Display query
             st.markdown(f"### Question: {query}")
             
-            # Generate response
-            with st.spinner("Searching reviews and generating answer..."):
-                try:
-                    # Get response
-                    response = st.session_state.rag_system.generate_response(query, top_k)
-                    
-                    # Display response
-                    st.markdown("### Answer:")
-                    st.markdown(response)
-                    
-                    # Show relevant reviews
-                    with st.expander("View Relevant Reviews Used", expanded=False):
-                        relevant_reviews = st.session_state.rag_system.get_relevant_reviews_info(query, top_k)
-                        
-                        for i, review in enumerate(relevant_reviews, 1):
-                            st.markdown(f"#### Review {i} (Similarity: {review['similarity_score']:.3f})")
-                            st.markdown(f"**Book:** {review.get('Title', 'Unknown')}")
-                            st.markdown(f"**Rating:** {review.get('review/score', 'N/A')}/5")
-                            st.markdown(f"**Summary:** {review.get('review/summary', 'N/A')}")
-                            st.markdown(f"**Review Text:** {review.get('review/text', 'N/A')[:300]}...")
-                            st.divider()
+            # Generate response with streaming
+            try:
+                st.markdown("### Answer:")
+                # Create a placeholder for streaming response
+                response_placeholder = st.empty()
                 
-                except Exception as e:
-                    st.error(f"Error processing query: {e}")
-                    st.exception(e)
+                # Collect streaming chunks
+                full_response = ""
+                with st.spinner("Searching reviews..."):
+                    # Retrieve reviews first (this happens before streaming)
+                    relevant_reviews = st.session_state.rag_system.get_relevant_reviews_info(query, top_k)
+                
+                # Stream the response
+                for chunk in st.session_state.rag_system.generate_response_stream(query, top_k):
+                    full_response += chunk
+                    # Update the placeholder with accumulated text
+                    response_placeholder.markdown(full_response)
+                
+                # Show relevant reviews
+                with st.expander("View Relevant Reviews Used", expanded=False):
+                    for i, review in enumerate(relevant_reviews, 1):
+                        st.markdown(f"#### Review {i} (Similarity: {review['similarity_score']:.3f})")
+                        st.markdown(f"**Book:** {review.get('Title', 'Unknown')}")
+                        st.markdown(f"**Rating:** {review.get('review/score', 'N/A')}/5")
+                        st.markdown(f"**Summary:** {review.get('review/summary', 'N/A')}")
+                        st.markdown(f"**Review Text:** {review.get('review/text', 'N/A')[:300]}...")
+                        st.divider()
+            
+            except Exception as e:
+                st.error(f"Error processing query: {e}")
+                st.exception(e)
 
 
 if __name__ == "__main__":

@@ -17,23 +17,17 @@ load_dotenv()
 
 
 def main():
-    # Get API keys
+    # Get API key
     openai_key = os.getenv("OPENAI_API_KEY")
-    gemini_key = os.getenv("GEMINI_API_KEY")
     
     if not openai_key:
         print("Error: OPENAI_API_KEY not found in environment variables")
-        return
-    
-    if not gemini_key:
-        print("Error: GEMINI_API_KEY not found in environment variables")
         return
     
     # Initialize RAG system
     data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "reviews_9000_popular.csv")
     rag = RAGSystem(
         openai_api_key=openai_key,
-        gemini_api_key=gemini_key,
         data_path=data_path
     )
     

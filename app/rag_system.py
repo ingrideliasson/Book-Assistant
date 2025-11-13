@@ -9,26 +9,21 @@ import pandas as pd
 import numpy as np
 import faiss
 from openai import OpenAI
-from typing import List, Dict, Tuple
-import google.generativeai as genai
+from typing import List, Dict, Tuple, Iterator
 
 
 class RAGSystem:
-    def __init__(self, openai_api_key: str, gemini_api_key: str, data_path: str = None):
+    def __init__(self, openai_api_key: str, data_path: str = None):
         """
         Initialize the RAG system
         
         Args:
-            openai_api_key: OpenAI API key for embeddings
-            gemini_api_key: Google Gemini API key for generation
+            openai_api_key: OpenAI API key for embeddings and generation
             data_path: Path to the reviews CSV file
         """
         self.openai_client = OpenAI(api_key=openai_api_key)
-        genai.configure(api_key=gemini_api_key)
-        # Use gemini-2.5-flash for fast responses, or gemini-2.5-pro for better quality
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
-        
         self.embedding_model = "text-embedding-3-small"
+        self.generation_model = "gpt-4o-mini"  # Fast and cost-effective model
         self.index = None
         self.reviews_df = None
         self.embeddings = None
@@ -171,7 +166,7 @@ class RAGSystem:
     
     def generate_response(self, query: str, top_k: int = 5) -> str:
         """
-        Generate a response using RAG
+        Generate a response using RAG (non-streaming version)
         
         Args:
             query: User query
@@ -180,11 +175,29 @@ class RAGSystem:
         Returns:
             Generated response string
         """
+        # Use streaming version and collect all chunks
+        full_response = ""
+        for chunk in self.generate_response_stream(query, top_k):
+            full_response += chunk
+        return full_response
+    
+    def generate_response_stream(self, query: str, top_k: int = 5) -> Iterator[str]:
+        """
+        Generate a streaming response using RAG
+        
+        Args:
+            query: User query
+            top_k: Number of relevant reviews to retrieve
+            
+        Yields:
+            Response chunks as strings
+        """
         # Retrieve relevant reviews
         relevant_reviews = self.retrieve_relevant_reviews(query, top_k)
         
         if not relevant_reviews:
-            return "I couldn't find any relevant reviews for your query."
+            yield "I couldn't find any relevant reviews for your query."
+            return
         
         # Build context from retrieved reviews
         context_parts = []
@@ -204,12 +217,15 @@ class RAGSystem:
         
         context = "\n".join(context_parts)
         
-        # Create prompt for Gemini
-        prompt = f"""You are a helpful assistant that answers questions about books based on customer reviews.
-
-Based on the following customer reviews, please answer the user's question. 
-If the reviews don't contain enough information to answer the question, say so.
-Be specific and cite information from the reviews when possible.
+        # Create prompt for OpenAI
+        messages = [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant that answers questions about books based on customer reviews. Be specific and cite information from the reviews when possible. If the reviews don't contain enough information to answer the question, say so."
+            },
+            {
+                "role": "user",
+                "content": f"""Based on the following customer reviews, please answer the user's question.
 
 Customer Reviews:
 {context}
@@ -217,12 +233,22 @@ Customer Reviews:
 User Question: {query}
 
 Answer:"""
+            }
+        ]
         
         try:
-            response = self.model.generate_content(prompt)
-            return response.text
+            stream = self.openai_client.chat.completions.create(
+                model=self.generation_model,
+                messages=messages,
+                stream=True,
+                temperature=0.7
+            )
+            
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    yield chunk.choices[0].delta.content
         except Exception as e:
-            return f"Error generating response: {str(e)}"
+            yield f"Error generating response: {str(e)}"
     
     def get_relevant_reviews_info(self, query: str, top_k: int = 5) -> List[Dict]:
         """Get information about retrieved reviews for display"""
