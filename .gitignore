@@ -1,5 +1,5 @@
 .env
 data/data_origin.csv
 data/faiss_index.bin
-data/embeddings.py
+data/embeddings.npy
 .DS_Store
